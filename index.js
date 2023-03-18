@@ -42,26 +42,31 @@ async function getUserId(){
 		)
 }
 main()
+async function processRoom(roomName){
+		let RCL = await getLevel(roomName)
+		if (RCL){
+				let userID = await processRoomObjects(roomName)
+				if (userID){
+						let username = userID
+						if (users[userID]){
+								username = users[userID].name;
+								users[userID].score += RCL
+						}
+						console.log('room counted for',username,': level',RCL)
+				} else {
+						console.log('no spawns in',roomName)
+				}
+		}
+}
 async function getRooms(){
+		let promises = []
 		for (let x = 0; x < 30;x++){
 				for (let y = 0; y < 30;y++){
 						let roomName = `E${x}N${y}`
-						let RCL = await getLevel(roomName)
-						if (RCL){
-								let userID = await processRoomObjects(roomName)
-								if (userID){
-										let username = userID
-										if (users[userID]){
-												username = users[userID].name;
-												users[userID].score += RCL
-										}
-										console.log('room counted for',username,': level',RCL)
-								} else {
-										console.log('no spawns in',roomName)
-								}
-						}
+						promises.push(processRoom(roomName))
 				}
 		}
+		await Promise.all(promises)
 }
 async function getLevel(roomName){
 		let url = `${baseUrl}/api/game/map-stats`
@@ -124,4 +129,15 @@ async function main(){
 		await getUserId()
 		await getRooms()
 		console.log(JSON.stringify(users))
+		let list = []
+		for (let i in users){
+				let userObj = users[i]
+				if (userObj && userObj.score){
+						list.push(i)
+				}
+		}
+		list.sort((a,b)=>users[b].score - users[a].score)
+		for (let i in list){
+				console.log(users[list[i]].name, users[list[i]].score)
+		}
 }
